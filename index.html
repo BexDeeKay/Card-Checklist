@@ -1,0 +1,298 @@
+<title>Card Proofing Checklist</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --bg: #ffffff;
+    --ink: #37352f;
+    --muted: #787774;
+    --line: #e9e8e4;
+    --accent: #3c6e59;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #191919;
+      --ink: #d4d4d4;
+      --muted: #9b9b9b;
+      --line: #2e2e2e;
+      --accent: #78b399;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #191919;
+    --ink: #d4d4d4;
+    --muted: #9b9b9b;
+    --line: #2e2e2e;
+    --accent: #78b399;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 0.95rem;
+    min-height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 18px 16px 28px;
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .type-select {
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    padding: 2px 4px 4px 0;
+    cursor: pointer;
+  }
+
+  .progress {
+    font-size: 0.82rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .progress .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 2px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+
+  .item:last-child {
+    border-bottom: none;
+  }
+
+  .item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .item-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-label {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .item.done .item-label {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--line);
+    font-weight: 400;
+  }
+
+  .item-tag {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .reset-row {
+    margin-top: 18px;
+  }
+
+  #reset-btn {
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+
+  #reset-btn:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
+
+  .type-select:focus-visible,
+  #reset-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+
+<div class="top">
+  <select class="type-select" id="type-select">
+    <option value="elestral">Elestral card</option>
+    <option value="rune">Rune card</option>
+    <option value="spirit">Spirit card</option>
+  </select>
+  <div class="progress" id="progress"></div>
+</div>
+
+<div class="list" id="list"></div>
+
+<div class="reset-row">
+  <button id="reset-btn" type="button">Reset checklist</button>
+</div>
+
+<script>
+(function () {
+  var PARTS = [
+    { id: "stellar_numbering", label: "Stellar Numbering", conditional: "optional", hint: "Diamond icons at start and end. Font color matches leftmost cost icon. Bold with glow. Serialized: 01–10 or 01–99 / total (e.g. 07/99). Starting Daybreak, applied by factory stamp." },
+    { id: "name", label: "Name", hint: "Centered in gray frame at top. Font: Alegreya Medium, black, 10pt kerning. Capitalization follows standard English grammar. Full art cards: text layered on artwork, color matches leftmost cost icon." },
+    { id: "title", label: "Title", conditional: "optional", hint: "Displayed below name frame when present. Font size matches effect text. Color matches leftmost cost icon. Check for dark bar artifact if layer isn't toggled correctly in PSD." },
+    { id: "effect_text", label: "Effect Text", conditional: "no-spirit", hint: "Check spelling, grammar, and line breaks. Line breaks must match across all card variants (Stellar, holo, alt art, reprints). Font: Alegreya Medium. Bracketed italics only for niche rules clarifications." },
+    { id: "artist_credit", label: "Artist Credit", hint: "Bottom left, below frame, in white. Format: 'Illus. [Name]'. Multiple artists: separated by / or &. Verify name against Artist Database. Font size consistent, style set to 'strong'." },
+    { id: "card_number", label: "Card Number", hint: "Bottom right, below frame, white text. Format: [SetCode]-[Number] e.g. BS1-001. 2-digit if set ≤99 cards, 3-digit if >99. Font size consistent, style 'strong'. See Stellar Numbering for Stellar cards." },
+    { id: "copyright", label: "Copyright", hint: "Bottom of card, below artist credit and number. Identical across all cards — only the year changes, reflecting the print year. Font size consistent, style 'strong'." },
+    { id: "set_stamps", label: "Set Stamps", hint: "Lower left corner. 1–2 stamps: first = set stamp (must match all cards in set), second = series stamp." },
+    { id: "subclasses", label: "Subclasses", hint: "Lower right corner stamps. 1–2 subclasses. Order must match across all variants and generally stays consistent in an Ascension line (may change between members). Verify against Creature Database. Most Runes have no subclass." },
+    { id: "cost", label: "Cost", hint: "1–3 cost icons. Determines energy line and rarity bar colors. Dual-type: left icon colors left energy line + left rarity bar; right icon colors right. Triple-type: center icon colors rarity bar only. Spirit cards have a single element icon." },
+    { id: "attack_value", label: "Attack Value", conditional: "elestral", hint: "Left value on Elestral cards. Font color matches leftmost cost icon (dual/triple type: left icon). Must match across all variants of the same card. Verify placement against ATK/DEF placement guide templates." },
+    { id: "defense_value", label: "Defense Value", conditional: "elestral", hint: "Right value on Elestral cards. Font color: dual/triple-type matches rightmost cost icon; mono-type matches cost icon. Must match across all variants. Verify placement against templates." },
+    { id: "rune_icon", label: "Rune Icon", conditional: "rune", hint: "Found on both sides of Rune cards, always identical. Matches the card's single Rune type. Stadium icon (only asymmetrical one) must be mirrored with topmost spike pointed inward." },
+    { id: "side_text", label: "Side Text", conditional: "rune", hint: "Text beside Rune icon on both sides, always identical. Letters are vertically stacked. Font color follows same rules as Attack/Defense values (matches cost icon coloring)." },
+    { id: "spirit_title", label: "Spirit Title", conditional: "spirit", hint: "Ensure that the text matches the Spirit depicted, is the correct colour, and includes all layer effects." },
+    { id: "frame", label: "Frame", hint: "Six frame designs: Spirit, FA Spirit, Elestral, FA Elestral, Rune, FA Rune. Base design identical within each category. Energy line and rarity bar colors follow cost icon rules." },
+    { id: "card_rarity", label: "Rarity", hint: "Rarity bar above artist credit. Must match provided documentation. Stellar cards always use the Stellar rarity indicator regardless of base rarity. Options: Common, Uncommon, Rare, Stellar." },
+    { id: "layer_effects", label: "Layer Effects", hint: "Ensure that all layer effects — such as glow on the energy lines and within the effect text box — are toggled and rendering properly." },
+    { id: "background", label: "Background", hint: "Bottommost layer. Color matches first/leftmost cost icon. Should only be visible at outer edge and behind effect text box. Full art cards omit this layer." },
+    { id: "artwork", label: "Artwork", hint: "Must be complete — no stray sketch marks or reference layers. Check anatomy and on-model consistency with art database. In the case of frame breaks, ensure that no unintended sections of the art are mislayered and/or visible." }
+  ];
+
+  var typeSelect = document.getElementById('type-select');
+  var list = document.getElementById('list');
+  var progress = document.getElementById('progress');
+  var resetBtn = document.getElementById('reset-btn');
+
+  function isVisible(part, type) {
+    if (!part.conditional || part.conditional === 'optional') return true;
+    if (part.conditional === 'elestral') return type === 'elestral';
+    if (part.conditional === 'rune') return type === 'rune';
+    if (part.conditional === 'spirit') return type === 'spirit';
+    if (part.conditional === 'no-spirit') return type !== 'spirit';
+    return true;
+  }
+
+  function stateKey(type) { return 'card-checklist:state:' + type; }
+
+  function loadState(type) {
+    try {
+      var raw = localStorage.getItem(stateKey(type));
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveState(type, state) {
+    try { localStorage.setItem(stateKey(type), JSON.stringify(state)); } catch (e) {}
+  }
+
+  function render() {
+    var type = typeSelect.value;
+    var state = loadState(type);
+    var visibleParts = PARTS.filter(function (p) { return isVisible(p, type); });
+
+    list.innerHTML = '';
+    visibleParts.forEach(function (part) {
+      var done = !!state[part.id];
+
+      var row = document.createElement('div');
+      row.className = 'item' + (done ? ' done' : '');
+
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = done;
+      checkbox.id = 'chk-' + part.id;
+
+      var body = document.createElement('div');
+      body.className = 'item-body';
+
+      var labelRow = document.createElement('label');
+      labelRow.setAttribute('for', checkbox.id);
+      labelRow.className = 'item-label';
+      labelRow.textContent = part.label;
+      if (part.conditional === 'optional') {
+        var tag = document.createElement('span');
+        tag.className = 'item-tag';
+        tag.textContent = ' — if applicable';
+        labelRow.appendChild(tag);
+      }
+
+      body.appendChild(labelRow);
+      row.appendChild(checkbox);
+      row.appendChild(body);
+
+      row.addEventListener('click', function (e) {
+        if (e.target === checkbox) return;
+        checkbox.checked = !checkbox.checked;
+        toggle(part.id, checkbox.checked);
+      });
+      checkbox.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggle(part.id, checkbox.checked);
+      });
+
+      list.appendChild(row);
+    });
+
+    var doneCount = visibleParts.filter(function (p) { return !!state[p.id]; }).length;
+    progress.innerHTML = '<span class="num">' + doneCount + '/' + visibleParts.length + '</span> checked';
+
+    function toggle(partId, isChecked) {
+      state[partId] = isChecked;
+      saveState(type, state);
+      render();
+    }
+  }
+
+  typeSelect.addEventListener('change', function () {
+    try { localStorage.setItem('card-checklist:last-type', typeSelect.value); } catch (e) {}
+    render();
+  });
+
+  resetBtn.addEventListener('click', function () {
+    saveState(typeSelect.value, {});
+    render();
+  });
+
+  var lastType = '';
+  try { lastType = localStorage.getItem('card-checklist:last-type') || ''; } catch (e) {}
+  if (lastType) typeSelect.value = lastType;
+
+  render();
+})();
+</script>
